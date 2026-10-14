@@ -440,14 +440,8 @@ impl Session {
                 ctx.progress(0.02, "Decoding");
                 #[cfg(target_os = "android")]
                 let decode_started = std::time::Instant::now();
-                let imported = ctx.stage(0.02, 1.0, "Decoding", |ctl| {
-                    photocraft_io::import_with_svg_group_depth_and_interrupt(
-                        &name_w,
-                        &bytes,
-                        max_svg_group_depth,
-                        ctl,
-                    )
-                });
+                let imported =
+                    ctx.stage(0.02, 1.0, "Decoding", |ctl| photocraft_io::import_with_svg_group_depth_and_interrupt(&name_w, &bytes, max_svg_group_depth, ctl));
                 #[cfg(target_os = "android")]
                 log::info!("PhotoCraft open timing [{}]: decode/import {:.1} ms", name_w, decode_started.elapsed().as_secs_f64() * 1000.0);
                 imported.map_err(|e| match e {
