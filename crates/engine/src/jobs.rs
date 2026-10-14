@@ -428,30 +428,44 @@ impl Session {
             false,
             move |ctx| {
                 ctx.progress(0.0, "Reading");
+                #[cfg(target_os = "android")]
+                let read_started = std::time::Instant::now();
                 let bytes = match source {
                     OpenSource::Bytes(b) => b,
                     OpenSource::Path(p) => Arc::new(read_path(&p)?),
                 };
+                #[cfg(target_os = "android")]
+                log::info!("PhotoCraft open timing [{}]: read/source {:.1} ms, {} bytes", name_w, read_started.elapsed().as_secs_f64() * 1000.0, bytes.len());
                 ctx.check()?;
                 ctx.progress(0.02, "Decoding");
-                ctx.stage(0.02, 1.0, "Decoding", |ctl| photocraft_io::import_with_svg_group_depth_and_interrupt(&name_w, &bytes, max_svg_group_depth, ctl))
-                    .map_err(|e| match e {
-                        photocraft_io::IoError::Cancelled => EngineError::Cancelled,
-                        e => EngineError::Other(e.to_string()),
-                    })
+                #[cfg(target_os = "android")]
+                let decode_started = std::time::Instant::now();
+                let imported = ctx.stage(0.02, 1.0, "Decoding", |ctl| photocraft_io::import_with_svg_group_depth_and_interrupt(&name_w, &bytes, max_svg_group_depth, ctl));
+                #[cfg(target_os = "android")]
+                log::info!("PhotoCraft open timing [{}]: decode/import {:.1} ms", name_w, decode_started.elapsed().as_secs_f64() * 1000.0);
+                imported.map_err(|e| match e {
+                    photocraft_io::IoError::Cancelled => EngineError::Cancelled,
+                    e => EngineError::Other(e.to_string()),
+                })
             },
             move |s, r: photocraft_io::ImportResult| {
                 // Ask When Opening: held back until the prompt is answered (`take_held_open`). A
                 // developed raw has no embedded profile to ask about.
+                #[cfg(target_os = "android")]
+                let apply_started = std::time::Instant::now();
                 let raw = r.warnings.iter().any(|w| w.contains(photocraft_io::raw::DEVELOPED_NOTE));
                 if let Some(question) = s.color.open_question(&r.document).filter(|_| !raw) {
                     let held = s.hold_open(r.document, r.source_read_only);
+                    #[cfg(target_os = "android")]
+                    log::info!("PhotoCraft open timing [{}]: document apply/colour prompt {:.1} ms", name_a, apply_started.elapsed().as_secs_f64() * 1000.0);
                     return Ok(json!({"held": held, "name": name_a, "warnings": r.warnings, "color": question}));
                 }
                 let (index, color) = s.open_document(r.document, None);
                 if let Some(st) = s.active_mut() {
                     st.source_read_only = r.source_read_only;
                 }
+                #[cfg(target_os = "android")]
+                log::info!("PhotoCraft open timing [{}]: document apply {:.1} ms", name_a, apply_started.elapsed().as_secs_f64() * 1000.0);
                 Ok(json!({"document": index, "name": name_a, "warnings": r.warnings, "color": color}))
             },
         )
