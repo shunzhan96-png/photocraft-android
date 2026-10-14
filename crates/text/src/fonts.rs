@@ -778,6 +778,14 @@ pub(crate) fn system_font_dirs() -> Vec<std::path::PathBuf> {
         if let Some(l) = std::env::var_os("LOCALAPPDATA") {
             v.push(PathBuf::from(l).join("Microsoft\\Windows\\Fonts"));
         }
+    } else if cfg!(target_os = "android") {
+        // Android doesn't use Linux's /usr/share/fonts layout. Its system CJK fonts live
+        // in these read-only partitions; scanning them lets the lazy UI fallback load Chinese,
+        // Japanese and Korean glyphs instead of rendering missing-glyph boxes.
+        v.push(PathBuf::from("/system/fonts"));
+        v.push(PathBuf::from("/system_ext/fonts"));
+        v.push(PathBuf::from("/product/fonts"));
+        v.push(PathBuf::from("/vendor/fonts"));
     } else {
         v.push(PathBuf::from("/usr/share/fonts"));
         v.push(PathBuf::from("/usr/local/share/fonts"));
