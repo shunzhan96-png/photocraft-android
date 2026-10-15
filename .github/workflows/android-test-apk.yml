@@ -1,0 +1,64 @@
+name: Android test APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: "Branch to build (use the isolated Android fix branch)"
+        required: true
+        default: "diagnose/android-open-font-fix"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-test-apk-manual
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build arm64 Android APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Check out selected source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_branch }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "ndk;27.3.13750724"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.3.13750724" >> "$GITHUB_ENV"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Build APK
+        run: apps/photocraft-android/build.sh
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: photocraft-android-arm64-test-${{ inputs.source_branch }}-${{ github.run_number }}
+          path: target/android/photocraft-*-arm64-v8a.apk
+          if-no-files-found: error
+          retention-days: 14
