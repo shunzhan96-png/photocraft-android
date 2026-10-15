@@ -1678,7 +1678,12 @@ pub fn right_dock(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         dock_panels(app, ui, &p, &t);
     }
     // Narrow icon rail, unless an embedding app hides it: shows, expands or collapses panel groups.
-    if p.rail {
+    // On a narrow Android portrait screen, the panel tabs remain available inside the dock.
+    // Hide the separate rail to give the canvas back some horizontal room. Landscape and desktop
+    // retain the full rail.
+    let screen = ui.ctx().screen_rect();
+    let android_portrait = cfg!(target_os = "android") && screen.height() > screen.width();
+    if p.rail && !android_portrait {
         let (rw, rb) = if cfg!(target_os = "android") { (48.0, 40.0) } else if t.pro { (36.0, 28.0) } else { (44.0, 32.0) };
         crate::direction::end_panel("rail")
             .resizable(false)
@@ -1727,7 +1732,8 @@ pub(crate) fn dock_width_id() -> egui::Id {
 
 /// Set the right dock's width on the next frame (`ui.set {dockWidth}`); clamped to its range.
 pub fn request_dock_width(ctx: &egui::Context, w: f32) {
-    let w = if w.is_finite() { w.clamp(*DOCK_WIDTH.start(), *DOCK_WIDTH.end()) } else { *DOCK_WIDTH.start() };
+    let range = if cfg!(target_os = "android") { 190.0..=360.0 } else { DOCK_WIDTH };
+    let w = if w.is_finite() { w.clamp(*range.start(), *range.end()) } else { *range.start() };
     ctx.data_mut(|d| d.insert_temp(dock_width_id(), w));
 }
 
@@ -1749,7 +1755,11 @@ fn dock_panels(app: &mut PhotocraftApp, ui: &mut egui::Ui, p: &crate::state::Pan
         return;
     }
     let margin = if t.pro { 2 } else { 8 };
-    let mut panel = crate::direction::end_panel("dock").resizable(true).default_size(if t.pro { 290.0 } else { 300.0 }).size_range(DOCK_WIDTH);
+    // Android phones need a narrower dock so the canvas remains usable in portrait. The panel
+    // can still be resized, and landscape/tablet/desktop keep their established width range.
+    let width_range = if cfg!(target_os = "android") { 190.0..=360.0 } else { DOCK_WIDTH };
+    let default_width = if cfg!(target_os = "android") { 220.0 } else if t.pro { 290.0 } else { 300.0 };
+    let mut panel = crate::direction::end_panel("dock").resizable(true).default_size(default_width).size_range(width_range);
     if let Some(w) = ui.ctx().data_mut(|d| d.remove_temp::<f32>(dock_width_id())) {
         panel = panel.exact_size(w);
     }
