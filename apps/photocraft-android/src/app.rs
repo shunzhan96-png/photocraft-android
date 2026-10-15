@@ -200,7 +200,7 @@ impl eframe::App for Shell {
         // Android touch-first defaults: enlarge standard widget hit targets and add breathing
         // room without changing the shared desktop/web UI. This is intentionally scoped to
         // this Android shell; the canvas itself is not scaled.
-        let spacing = &mut ui.spacing_mut();
+        let spacing = ui.spacing_mut();
         spacing.interact_size = egui::vec2(44.0, 44.0);
         spacing.button_padding = egui::vec2(10.0, 8.0);
         spacing.item_spacing = egui::vec2(8.0, 8.0);
