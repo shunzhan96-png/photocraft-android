@@ -62,7 +62,7 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: photocraft-android-arm64-test-${{ inputs.source_branch }}-${{ github.run_number }}
+          name: photocraft-android-arm64-test-${{ github.run_number }}
           path: target/android/photocraft-*-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 14
