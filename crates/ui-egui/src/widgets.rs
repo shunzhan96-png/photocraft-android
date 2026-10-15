@@ -487,7 +487,7 @@ fn value_field_in(
     trailing: f32,
     opts: FieldOpts,
 ) -> (Response, Rect) {
-    let height = if cfg!(target_os = "android") { 30.0 } else { VALUE_FIELD_H };
+    let height = if cfg!(target_os = "android") { 36.0 } else { VALUE_FIELD_H };
     value_field_box(ui, value, range, suffix, vec2(width, height), trailing, opts)
 }
 
@@ -933,7 +933,7 @@ fn slider_with(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32
     let width = ui.available_width().max(60.0);
     // Android gets a taller invisible hit area so the slider can be dragged reliably by finger.
     let touch = cfg!(target_os = "android");
-    let (rect, mut resp) = ui.allocate_exact_size(vec2(width, if touch { 34.0 } else { 18.0 }), Sense::click_and_drag());
+    let (rect, mut resp) = ui.allocate_exact_size(vec2(width, if touch { 42.0 } else { 18.0 }), Sense::click_and_drag());
     let (lo, hi) = (*range.start(), *range.end());
     let track = Rect::from_center_size(
         rect.center(),
@@ -1048,7 +1048,8 @@ pub fn slider_row_prec(
         let l = ui.label(egui::RichText::new(tl!(label)).color(t.text_dim));
         scrub_label_within(ui, &l, f32::INFINITY);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            changed_resp = Some(value_field_in(ui, value, range.clone(), suffix, 74.0, 0.0, FieldOpts { decimals, ..Default::default() }).0);
+            let field_width = if cfg!(target_os = "android") { 86.0 } else { 74.0 };
+            changed_resp = Some(value_field_in(ui, value, range.clone(), suffix, field_width, 0.0, FieldOpts { decimals, ..Default::default() }).0);
         });
     });
     let s = slider_with(ui, value, range, gradient, g);
@@ -1073,7 +1074,9 @@ pub fn toggle(ui: &mut Ui, on: &mut bool, label: &str) -> Response {
     }
     let mut resp = ui
         .horizontal(|ui| {
-            let (rect, resp) = ui.allocate_exact_size(vec2(30.0, 17.0), Sense::click());
+            let hit_size = if cfg!(target_os = "android") { vec2(44.0, 32.0) } else { vec2(30.0, 17.0) };
+            let (hit_rect, resp) = ui.allocate_exact_size(hit_size, Sense::click());
+            let rect = Rect::from_center_size(hit_rect.center(), vec2(30.0, 17.0));
             let how_on = ui.ctx().animate_bool(resp.id, *on);
             let bg = if *on { t.accent } else { t.field_border };
             if t.bevel {
@@ -1614,7 +1617,7 @@ pub fn checkbox(ui: &mut Ui, on: &mut bool, label: &str) -> Response {
     let mut resp = ui
         .horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 6.0;
-            let (rect, resp) = ui.allocate_exact_size(vec2(14.0, 14.0), Sense::click());
+            let (rect, resp) = ui.allocate_exact_size(if cfg!(target_os = "android") { vec2(24.0, 24.0) } else { vec2(14.0, 14.0) }, Sense::click());
             let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
             let l = ui
                 .add(egui::Label::new(egui::RichText::new(tl!(label)).color(t.text_dim)).selectable(false).sense(Sense::click()))
