@@ -605,6 +605,9 @@ pub struct PhotocraftApp {
     /// sent again only when it changes, so idle frames don't spam the backend.
     last_window_title: String,
     fonts_ready: bool,
+    /// Android narrow-portrait workspace: panel visibility is session-only and does not
+    /// overwrite the user's saved desktop/landscape panel preferences.
+    mobile_panels_visible: bool,
     /// Screen rect of the main canvas last frame (for overlays and the navigator).
     pub last_canvas_rect: egui::Rect,
     /// Physical pixels per egui point of the canvas last frame (`ctx.pixels_per_point`, which
@@ -817,6 +820,7 @@ impl PhotocraftApp {
             custom_titlebar: false,
             last_window_title: String::new(),
             fonts_ready: false,
+            mobile_panels_visible: false,
             last_canvas_rect: egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800.0, 600.0)),
             ppp: 1.0,
             drop_canvas_rect: None,
@@ -1839,13 +1843,31 @@ impl eframe::App for PhotocraftApp {
         if chrome && self.ui.panels.toolbar {
             panels::toolbar(self, ui);
         }
-        if chrome && self.ui.panels.dock {
+        let screen = ctx.content_rect();
+        // Phones in portrait get a canvas-first workspace. Tablets, landscape and desktop keep
+        // the full dock visible; the floating toggle only controls this narrow-portrait session.
+        let android_phone_portrait = cfg!(target_os = "android")
+            && screen.height() > screen.width()
+            && screen.width() < 700.0;
+        if chrome && self.ui.panels.dock && (!android_phone_portrait || self.mobile_panels_visible) {
             panels::right_dock(self, ui);
         }
         let t = theme::Tokens::get(&ctx);
         let backdrop = if chrome { prefs_ui::pasteboard_color(self).unwrap_or(t.canvas) } else { egui::Color32::BLACK };
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(backdrop)).show(ui, |ui| {
+            let canvas_origin = ui.max_rect().left_top();
             canvas::document_area(self, ui);
+            if chrome && android_phone_portrait {
+                egui::Area::new(egui::Id::new("android-mobile-panels-toggle"))
+                    .order(egui::Order::Foreground)
+                    .fixed_pos(canvas_origin + egui::vec2(8.0, 8.0))
+                    .show(ui.ctx(), |ui| {
+                        let label = if self.mobile_panels_visible { "收起面板" } else { "打开面板" };
+                        if ui.add_sized([92.0, 44.0], egui::Button::new(label)).clicked() {
+                            self.mobile_panels_visible = !self.mobile_panels_visible;
+                        }
+                    });
+            }
         });
         panels::properties_window(self, &ctx);
         brush_panel::window(self, &ctx);
