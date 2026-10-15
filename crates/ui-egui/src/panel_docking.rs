@@ -401,7 +401,7 @@ pub(crate) fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui) -> bool {
     let mut targets = Vec::new();
     let mut draw = |ui: &mut egui::Ui| {
         let mut style = craft_ui::docking::DockStyle::from_ui(ui);
-        style.tab_height = if t.pro { 28.0 } else { 40.0 };
+        style.tab_height = if cfg!(target_os = "android") { 44.0 } else if t.pro { 28.0 } else { 40.0 };
         style.min_pane = 0.0;
         style.background = t.card;
         // Studio themes leave the strip transparent over the dock's card; a floating group has no
