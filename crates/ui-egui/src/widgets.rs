@@ -487,7 +487,8 @@ fn value_field_in(
     trailing: f32,
     opts: FieldOpts,
 ) -> (Response, Rect) {
-    value_field_box(ui, value, range, suffix, vec2(width, VALUE_FIELD_H), trailing, opts)
+    let height = if cfg!(target_os = "android") { 30.0 } else { VALUE_FIELD_H };
+    value_field_box(ui, value, range, suffix, vec2(width, height), trailing, opts)
 }
 
 /// [`value_field_in`] with a box of any `size`.
@@ -521,7 +522,7 @@ fn value_field_box(
     let suffix_w = if suffix.is_empty() { 0.0 } else { ui.painter().layout_no_wrap(suffix.to_owned(), suffix_font.clone(), t.text_faint).size().x + 3.0 };
     // 1 pt higher than centred: digits have no descenders, so centred text looks low. The slot
     // is at least one text row tall, so a slim box's number isn't pushed out of it (#2823).
-    let font = theme::mono(12.0);
+    let font = theme::mono(if cfg!(target_os = "android") { 13.0 } else { 12.0 });
     let row_h = ui.painter().layout_no_wrap("0".into(), font.clone(), t.text).size().y;
     let slot_h = (rect.height() - 4.0).max(row_h).min(rect.height() - 2.0);
     let cy = rect.center().y - 1.0;
@@ -712,12 +713,19 @@ pub fn text_field(ui: &mut Ui, id: egui::Id, text: &mut String, hint: &str, widt
 /// [`text_field`] limited to `char_limit` characters (a hex field's six digits, say).
 pub fn text_field_ex(ui: &mut Ui, id: egui::Id, text: &mut String, hint: &str, width: f32, mono: bool, char_limit: Option<usize>) -> Response {
     let t = Tokens::get(ui.ctx());
-    let (rect, _) = ui.allocate_exact_size(vec2(width.max(16.0), TEXT_FIELD_H), Sense::hover());
+    let height = if cfg!(target_os = "android") { 32.0 } else { TEXT_FIELD_H };
+    let (rect, _) = ui.allocate_exact_size(vec2(width.max(16.0), height), Sense::hover());
     surface(ui, rect, t.field, false);
     if !t.bevel {
         ui.painter().rect_stroke(rect, t.radius_sm, Stroke::new(1.0, t.field_border), StrokeKind::Inside);
     }
-    let font = if mono { theme::mono(12.0) } else { egui::FontId::proportional(12.5) };
+    let font = if cfg!(target_os = "android") {
+        if mono { theme::mono(13.0) } else { egui::FontId::proportional(14.0) }
+    } else if mono {
+        theme::mono(12.0)
+    } else {
+        egui::FontId::proportional(12.5)
+    };
     let mut edit = egui::TextEdit::singleline(text).id(id).hint_text(hint).frame(egui::Frame::NONE).font(font);
     if let Some(limit) = char_limit {
         edit = edit.char_limit(limit);
@@ -923,9 +931,14 @@ fn second_click(ui: &Ui, resp: &Response) -> bool {
 fn slider_with(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32>, gradient: Option<&[Color32]>, g: RowGestures) -> Response {
     let t = Tokens::get(ui.ctx());
     let width = ui.available_width().max(60.0);
-    let (rect, mut resp) = ui.allocate_exact_size(vec2(width, 18.0), Sense::click_and_drag());
+    // Android gets a taller invisible hit area so the slider can be dragged reliably by finger.
+    let touch = cfg!(target_os = "android");
+    let (rect, mut resp) = ui.allocate_exact_size(vec2(width, if touch { 34.0 } else { 18.0 }), Sense::click_and_drag());
     let (lo, hi) = (*range.start(), *range.end());
-    let track = Rect::from_center_size(rect.center(), vec2(rect.width() - 14.0, if gradient.is_some() { 5.0 } else { 3.0 }));
+    let track = Rect::from_center_size(
+        rect.center(),
+        vec2(rect.width() - 14.0, if gradient.is_some() { if touch { 7.0 } else { 5.0 } } else if touch { 5.0 } else { 3.0 }),
+    );
     if let Some(p) = resp.interact_pointer_pos()
         && (resp.dragged() || resp.clicked())
     {
@@ -984,14 +997,14 @@ fn slider_with(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32
         let kr = Rect::from_center_size(knob, vec2(10.0, 16.0));
         surface(ui, kr, t.card, true);
     } else {
-        let kr = if t.pro { 6.0 } else { 7.0 };
+        let kr = if touch { 9.0 } else if t.pro { 6.0 } else { 7.0 };
         painter.circle_filled(knob + vec2(0.0, 1.0), kr + 0.5, Color32::from_black_alpha(90));
         painter.circle_filled(knob, kr, if t.pro { Color32::from_gray(236) } else { Color32::WHITE });
         if t.pro {
             painter.circle_stroke(knob, kr, Stroke::new(1.0, Color32::from_gray(40)));
         }
         if resp.hovered() || resp.dragged() {
-            painter.circle_stroke(knob, 9.5, Stroke::new(2.0, t.accent_soft));
+            painter.circle_stroke(knob, if touch { 12.0 } else { 9.5 }, Stroke::new(2.0, t.accent_soft));
         }
     }
     resp
