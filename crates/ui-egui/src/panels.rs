@@ -1679,7 +1679,7 @@ pub fn right_dock(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     }
     // Narrow icon rail, unless an embedding app hides it: shows, expands or collapses panel groups.
     if p.rail {
-        let (rw, rb) = if t.pro { (36.0, 28.0) } else { (44.0, 32.0) };
+        let (rw, rb) = if cfg!(target_os = "android") { (48.0, 40.0) } else if t.pro { (36.0, 28.0) } else { (44.0, 32.0) };
         crate::direction::end_panel("rail")
             .resizable(false)
             .exact_size(rw)
@@ -1689,7 +1689,7 @@ pub fn right_dock(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 let r = ui.max_rect();
                 let x = if crate::direction::is_rtl() { r.right() + 6.0 } else { r.left() - 6.0 };
                 ui.painter().line_segment([pos2(x, r.top() - 8.0), pos2(x, r.bottom() + 8.0)], Stroke::new(1.0, t.separator));
-                ui.spacing_mut().item_spacing.y = 4.0;
+                ui.spacing_mut().item_spacing.y = if cfg!(target_os = "android") { 8.0 } else { 4.0 };
                 use crate::dock::Group;
                 let entries: [(&str, &str, Group); 5] = [
                     ("sliders-horizontal", tl!("Properties"), Group::Properties),
