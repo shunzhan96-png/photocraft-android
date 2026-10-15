@@ -1681,7 +1681,7 @@ pub fn right_dock(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     // On a narrow Android portrait screen, the panel tabs remain available inside the dock.
     // Hide the separate rail to give the canvas back some horizontal room. Landscape and desktop
     // retain the full rail.
-    let screen = ui.ctx().screen_rect();
+    let screen = ui.ctx().content_rect();
     let android_portrait = cfg!(target_os = "android") && screen.height() > screen.width();
     if p.rail && !android_portrait {
         let (rw, rb) = if cfg!(target_os = "android") { (48.0, 40.0) } else if t.pro { (36.0, 28.0) } else { (44.0, 32.0) };
