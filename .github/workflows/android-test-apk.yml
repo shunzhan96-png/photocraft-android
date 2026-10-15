@@ -55,7 +55,9 @@ jobs:
         run: cargo install cargo-ndk --locked
 
       - name: Build APK
-        run: bash apps/photocraft-android/build.sh
+        run: |
+          chmod +x apps/photocraft-android/android/gradlew
+          bash apps/photocraft-android/build.sh
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
