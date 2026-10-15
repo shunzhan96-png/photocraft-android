@@ -389,6 +389,26 @@ pub fn font_files(script: CjkScript) -> Vec<FontFile> {
             TraditionalChinese => vec![w("msjh.ttc", "Microsoft JhengHei"), w("msjh.ttf", ""), w("mingliu.ttc", "")],
             Korean => vec![w("malgun.ttf", ""), w("gulim.ttc", "")],
         }
+    } else if cfg!(target_os = "android") {
+        // Android system fonts live in read-only system partitions, not Linux's
+        // /usr/share/fonts tree. The UI uses this function for egui's lazy CJK fallback;
+        // scanning Linux paths leaves Chinese toolbar labels as missing-glyph boxes.
+        // Prefer per-script Android fonts where present, then the shared Noto CJK collection.
+        let (specific, family, collection_family) = match script {
+            Japanese => (["NotoSansJP-Regular.otf", "NotoSansJP-VF.ttf"], "Noto Sans JP", "Noto Sans CJK JP"),
+            SimplifiedChinese => (["NotoSansSC-Regular.otf", "NotoSansSC-VF.ttf"], "Noto Sans SC", "Noto Sans CJK SC"),
+            TraditionalChinese => (["NotoSansTC-Regular.otf", "NotoSansTC-VF.ttf"], "Noto Sans TC", "Noto Sans CJK TC"),
+            Korean => (["NotoSansKR-Regular.otf", "NotoSansKR-VF.ttf"], "Noto Sans KR", "Noto Sans CJK KR"),
+        };
+        let mut files = Vec::new();
+        for dir in ["/system/fonts", "/system_ext/fonts", "/product/fonts", "/vendor/fonts"] {
+            for file in specific {
+                files.push(f(&format!("{dir}/{file}"), family));
+            }
+            files.push(f(&format!("{dir}/NotoSansCJK-Regular.ttc"), collection_family));
+            files.push(f(&format!("{dir}/NotoSansCJK-VF.ttf"), collection_family));
+        }
+        files
     } else {
         // One Noto Sans CJK collection covers all four scripts; the face picks the glyph forms.
         let noto = match script {
