@@ -80,7 +80,15 @@ fn visible_sections(hidden: &[String]) -> Vec<Vec<(usize, Vec<Tool>)>> {
 
 pub fn toolbar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
-    let (w1, bx, m) = if t.pro { (40.0, 30.0, 5i8) } else { (50.0, 36.0, 7i8) };
+    // Android's toolbar is used by touch, so give its buttons a larger hit area.
+    // Keep the change target-specific: desktop and web retain their existing dimensions.
+    let (w1, bx, m) = if cfg!(target_os = "android") {
+        if t.pro { (46.0, 40.0, 6i8) } else { (54.0, 40.0, 7i8) }
+    } else if t.pro {
+        (40.0, 30.0, 5i8)
+    } else {
+        (50.0, 36.0, 7i8)
+    };
     let sections = visible_sections(&app.session.prefs().toolbar.hidden);
     // Two columns when the header chevron asks for them; a column that doesn't fit scrolls.
     let double = app.ui.panels.toolbar_double;
