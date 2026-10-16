@@ -91,6 +91,7 @@ fn run(android: AndroidApp) -> Result<(), String> {
                 ime: String::new(),
                 editing: false,
                 soft_keyboard: false,
+                back_requested: false,
                 keys: Default::default(),
                 pad,
             }))
@@ -112,6 +113,8 @@ struct Shell {
     /// The Shortcut Pad's keyboard key opened the on-screen keyboard (it stays open, typing
     /// shortcuts, until the key is tapped again).
     soft_keyboard: bool,
+    /// A visible on-screen Back button requested an Escape action for the next input frame.
+    back_requested: bool,
     /// Hardware keyboard modifiers (see [`crate::keys`]).
     keys: crate::keys::Held,
     /// The Shortcut Pad (see [`crate::pad`]).
@@ -135,6 +138,25 @@ impl eframe::App for Shell {
     }
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        if self.back_requested {
+            self.back_requested = false;
+            // Back should dismiss the keyboard first; the next tap can then cancel the active
+            // dialog or popup through the app's existing Escape handling.
+            if self.soft_keyboard || self.editing {
+                self.android.hide_soft_input(false);
+                self.soft_keyboard = false;
+                self.pad.keyboard_on = false;
+            } else {
+                let tap = |pressed| egui::Event::Key {
+                    key: egui::Key::Escape,
+                    physical_key: Some(egui::Key::Escape),
+                    pressed,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                };
+                raw_input.events.extend([tap(true), tap(false)]);
+            }
+        }
         if self.pad.take_keyboard_tap() {
             self.soft_keyboard = !self.soft_keyboard;
             if self.soft_keyboard {
@@ -209,6 +231,21 @@ impl eframe::App for Shell {
         // The pad first, so the app lays out beside it.
         self.pad.show(ui, &tokens, &self.app);
         self.app.ui(ui, frame);
+        // Phone-sized Android layouts get a persistent Back affordance above the workspace.
+        // It routes through Escape so existing dialog/popup cancellation logic remains the
+        // single source of truth. Desktop, web, and tablet layouts are untouched.
+        let screen = ui.ctx().content_rect();
+        if screen.width() < 700.0 {
+            egui::Area::new(egui::Id::new("android-visible-back-button"))
+                .order(egui::Order::Foreground)
+                .fixed_pos(egui::pos2(screen.right() - 92.0, screen.bottom() - 56.0))
+                .show(ui.ctx(), |ui| {
+                    if ui.add_sized([84.0, 44.0], egui::Button::new("← 返回")).clicked() {
+                        self.back_requested = true;
+                        ui.ctx().request_repaint();
+                    }
+                });
+        }
         self.pad.settings(ui.ctx(), &tokens);
     }
 }
