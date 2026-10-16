@@ -874,7 +874,9 @@ impl craft_ui::docking::DockContent<String> for PanelContent<'_> {
                 .collect();
         }
         if !self.collapsed.contains(id) {
-            egui::Frame::NONE.inner_margin(egui::Margin::same(8)).show(ui, |ui| body(self.app, ui, id));
+            // Keep panel content compact on phones without changing desktop/web spacing.
+            let panel_margin = if cfg!(target_os = "android") { 5 } else { 8 };
+            egui::Frame::NONE.inner_margin(egui::Margin::same(panel_margin)).show(ui, |ui| body(self.app, ui, id));
         }
     }
     fn panel_menu(&mut self, ui: &mut egui::Ui, id: &String) {
@@ -897,7 +899,9 @@ impl craft_ui::docking::DockContent<String> for PanelContent<'_> {
         }
         let collapsed = panels.iter().all(|id| self.collapsed.contains(id));
         let locked = self.app.session.prefs().workspace_locked;
-        let resp = crate::icons::button(ui, "ellipsis", ui.available_height().min(28.0), false, tl!("Panel menu"));
+        // The panel menu is a frequent touch target on Android; reserve a larger hit area.
+        let menu_size = if cfg!(target_os = "android") { 40.0 } else { 28.0 };
+        let resp = crate::icons::button(ui, "ellipsis", ui.available_height().min(menu_size), false, tl!("Panel menu"));
         egui::Popup::menu(&resp).show(|ui| {
             ui.set_min_width(180.0);
             panel_menu(self.app, ui, active);
