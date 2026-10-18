@@ -3,9 +3,11 @@
 Unofficial Android UI improvements by [ZedissP](https://github.com/zedisspp).
 
 This branch also scans Android's system font partitions for script fallback, includes starter UI
-catalogs for Arabic, Hindi and Thai, makes the home/recent-file card fit narrow phone screens,
-uses more compact mobile menu rows, and keeps update checks manual-only. Native pinch zoom and
-2-finger canvas panning still need device-level event integration and are not claimed as complete.
+catalogs for Arabic, Hindi, Thai, Bengali and Filipino, makes the home/recent-file card fit narrow
+phone screens, uses compact mobile menu rows, and keeps update checks manual-only. The canvas now
+uses egui multi-touch gestures for anchored pinch zoom and two-finger panning, and suppresses the
+active painting tool during navigation gestures. Real-device testing is still required because
+Android's GameActivity/winit event delivery varies by device and input source.
 
 The same PhotoCraft app (engine, compositor, brushes, file formats, egui UI) running on Android
 tablets: an arm64-v8a APK, minimum Android 8.0 (API 26), built for Android 15 (API 35).

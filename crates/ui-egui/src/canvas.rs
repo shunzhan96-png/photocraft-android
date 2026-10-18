@@ -2902,6 +2902,17 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     let xf = ViewXform { rect, zoom: point_zoom, center: view.center, flip, rotation: view.rotation, aspect };
     let pixel_grid = app.ui.view.shows(app.ui.view.show.pixel_grid);
     let response = ui.allocate_rect(rect, Sense::click_and_drag());
+    // A two-finger gesture belongs to canvas navigation, never to the active painting tool.
+    // Finish an in-progress live stroke at its last valid point before handing the pointers to
+    // pinch/pan, otherwise the first finger can leave a long accidental line behind.
+    let multi_touch_active = ctx.input(|i| i.multi_touch().is_some());
+    if multi_touch_active && app.press_stroke {
+        if let Some(d) = app.drag.as_ref().and_then(|drag| drag.points.last().map(|p| [p[0], p[1]])) {
+            tool_event(app, ToolEvent::Up { x: d[0], y: d[1] }, egui::Modifiers::NONE);
+        }
+        app.press_stroke = false;
+    }
+    let primary = primary && !multi_touch_active;
     let stroke_dismissal = primary && crate::shape_stroke_ui::dismiss_from_canvas(app, &response);
     let painter = ui.painter_at(rect);
 
@@ -3159,6 +3170,22 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     // Navigation (wheel_nav.rs): scroll pans (⇧ or ⌘/Ctrl sideways); pinch and ⌥-scroll zoom around the pointer.
     let wheel =
         crate::wheel_nav::read(&ctx, app.session.prefs().general.zoom_with_scroll_wheel, app.session.prefs().enhanced_controls.zoom_with_trackpad_pinch);
+    // Native egui multi-touch input is available on touch devices as well as trackpads. Keep the
+    // point under the gesture centre anchored while pinching, and translate the camera with the
+    // two-finger drag. The primary tool path above is disabled for the entire gesture.
+    if let Some(gesture) = ctx.input(|i| i.multi_touch()) {
+        if gesture.zoom_delta.is_finite() && gesture.zoom_delta > 0.0 && gesture.zoom_delta != 1.0 {
+            let nz = crate::zoom_levels::clamp(view.zoom * gesture.zoom_delta, view.doc_size);
+            if nz != view.zoom {
+                zoom_about(&mut view, &xf, gesture.center_pos, nz, false, ppp);
+            }
+        }
+        if gesture.translation.x.is_finite() && gesture.translation.y.is_finite() {
+            let d = xf.unmap_vec(gesture.translation) / (view.zoom / ppp);
+            view.center[0] -= d.x;
+            view.center[1] -= d.y;
+        }
+    }
     // The wheel also scrolls over the scrollbars drawn on top of the canvas (last frame's hover).
     let bars_id = egui::Id::new(("pc-canvas-bars-hover", idx));
     let over_bars = ctx.data(|d| d.get_temp::<bool>(bars_id)).unwrap_or(false);
