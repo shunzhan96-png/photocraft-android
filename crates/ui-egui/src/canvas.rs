@@ -3180,8 +3180,8 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                 zoom_about(&mut view, &xf, gesture.center_pos, nz, false, ppp);
             }
         }
-        if gesture.translation.x.is_finite() && gesture.translation.y.is_finite() {
-            let d = xf.unmap_vec(gesture.translation) / (view.zoom / ppp);
+        if gesture.translation_delta.x.is_finite() && gesture.translation_delta.y.is_finite() {
+            let d = xf.unmap_vec(gesture.translation_delta) / (view.zoom / ppp);
             view.center[0] -= d.x;
             view.center[1] -= d.y;
         }
