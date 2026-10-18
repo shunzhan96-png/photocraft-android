@@ -531,10 +531,16 @@ pub fn body(app: &mut crate::PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<Strin
         })
         .collect();
     let chosen = get_s(f, "__preset", "");
-    ui.horizontal_top(|ui| {
+    // Touch on a screen too narrow for two columns: presets above, details below, both as wide as
+    // the dialog (which is capped to the screen in `dialogs.rs`).
+    let narrow = crate::touch::on(ui.ctx()) && ui.ctx().content_rect().width() < 860.0;
+    let col_w = if narrow { (ui.ctx().content_rect().width() - 56.0).clamp(240.0, 520.0) } else { 520.0 };
+    let per_row = if narrow { (((col_w + 8.0) / 172.0).floor() as usize).max(1) } else { 3 };
+    let layout = if narrow { egui::Layout::top_down(egui::Align::Min) } else { egui::Layout::left_to_right(egui::Align::Min) };
+    ui.with_layout(layout, |ui| {
         // Left: preset grid.
         ui.vertical(|ui| {
-            ui.set_width(520.0);
+            ui.set_width(col_w);
             if cat == "Saved" {
                 create |= saved_presets(app, ui, f);
                 return;
@@ -544,7 +550,7 @@ pub fn body(app: &mut crate::PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<Strin
             let card = vec2(164.0, 112.0);
             // Up to 20 recent documents: scroll past three rows rather than grow the dialog.
             egui::ScrollArea::vertical().id_salt("new-document-presets").max_height(3.0 * (card.y + 8.0)).show(ui, |ui| {
-                for row in presets.chunks(3) {
+                for row in presets.chunks(per_row) {
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing.x = 8.0;
                         for c in row {
@@ -605,7 +611,7 @@ pub fn body(app: &mut crate::PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<Strin
         ui.add_space(10.0);
         // Right: Preset Details.
         ui.vertical(|ui| {
-            ui.set_width(260.0);
+            ui.set_width(if narrow { col_w } else { 260.0 });
             ui.label(RichText::new(tl!("PRESET DETAILS")).size(11.0).color(t.text_faint));
             ui.add_space(4.0);
             // Keep the canonical English default in state; only the TextEdit shows a translation.

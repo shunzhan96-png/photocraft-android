@@ -2632,10 +2632,24 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     // File › Open Recent, newest first (on the web there are no paths to reopen).
     let recent: Vec<String> = if cfg!(target_arch = "wasm32") { Vec::new() } else { app.ui.recent_files.iter().take(HOME_RECENT).cloned().collect() };
     let recent_h = if recent.is_empty() { 0.0 } else { 34.0 + recent.len() as f32 * HOME_RECENT_ROW };
-    let card = Rect::from_center_size(area.center(), egui::vec2(460.0, 330.0 + recent_h));
-    let new_label = crate::shortcuts::command_label(app, "New document…", "file.new");
-    let open_label = crate::shortcuts::command_label(app, "Open…", "file.open");
+    // Touch: the card is as wide as the screen allows and scrolls, instead of a fixed 460 x 330+
+    // block centred on a phone that is narrower (portrait) or shorter (landscape) than that.
+    let touch = crate::touch::on(ui.ctx());
+    let content_h = 330.0 + recent_h;
+    let card_w = if touch { (area.width() - 24.0).clamp(200.0, 460.0) } else { 460.0 };
+    let card = if touch {
+        let top = area.top() + ((area.height() - content_h) / 2.0).clamp(8.0, 96.0);
+        Rect::from_min_max(pos2(area.center().x - card_w / 2.0, top), pos2(area.center().x + card_w / 2.0, area.bottom()))
+    } else {
+        Rect::from_center_size(area.center(), egui::vec2(460.0, content_h))
+    };
+    let (new_label, open_label) = if touch {
+        (tl!("New document…").to_string(), tl!("Open…").to_string())
+    } else {
+        (crate::shortcuts::command_label(app, "New document…", "file.new"), crate::shortcuts::command_label(app, "Open…", "file.open"))
+    };
     ui.scope_builder(egui::UiBuilder::new().max_rect(card), |ui| {
+        let body = |ui: &mut egui::Ui| {
         ui.vertical_centered(|ui| {
             ui.horizontal(|ui| {
                 let title = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(38.0), t.text);
@@ -2650,18 +2664,29 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             ui.add_space(6.0);
             ui.label(egui::RichText::new(tl!("Create a new document or open an existing file.")).color(t.text_dim).size(14.0));
             ui.add_space(22.0);
-            ui.horizontal(|ui| {
-                ui.add_space(((card.width() - 2.0 * 190.0 - 12.0) / 2.0).max(0.0));
-                ui.spacing_mut().item_spacing.x = 12.0;
-                if crate::widgets::primary_button(ui, &new_label, 190.0).clicked() {
+            let mut buttons = |ui: &mut egui::Ui, bw: f32| {
+                if crate::widgets::primary_button(ui, &new_label, bw).clicked() {
                     let fields = app.new_document_fields();
                     app.ui.open_dialog(crate::state::DialogKind::NewDocument, fields);
                 }
-                if crate::widgets::secondary_button(ui, &open_label, 190.0).clicked() {
+                if crate::widgets::secondary_button(ui, &open_label, bw).clicked() {
                     let _ = app.open_dialog_file();
                 }
-            });
+            };
+            if touch {
+                // Stacked and full width: easy to hit with a thumb at any screen width.
+                ui.spacing_mut().item_spacing.y = 10.0;
+                buttons(ui, card_w.min(320.0));
+            } else {
+                ui.horizontal(|ui| {
+                    ui.add_space(((card.width() - 2.0 * 190.0 - 12.0) / 2.0).max(0.0));
+                    ui.spacing_mut().item_spacing.x = 12.0;
+                    buttons(ui, 190.0);
+                });
+            }
             ui.add_space(22.0);
+            // Nothing can be dropped on a touch screen, so no hint there.
+            if !touch {
             ui.horizontal(|ui| {
                 let msg = start_screen_drop_hint(app);
                 let g = ui.painter().layout_no_wrap(msg.to_string(), egui::FontId::proportional(12.5), t.text_faint);
@@ -2670,6 +2695,7 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 crate::icons::paint(ui, r, "image", 15.0, t.text_faint);
                 ui.label(egui::RichText::new(msg).color(t.text_faint));
             });
+            }
             if !recent.is_empty() {
                 ui.add_space(22.0);
                 home_recent(app, ui, &recent);
@@ -2679,6 +2705,12 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             ui.add_space(10.0);
             crate::links::link_row(app, ui);
         });
+        };
+        if touch {
+            egui::ScrollArea::vertical().id_salt("start-screen-scroll").auto_shrink([false, false]).show(ui, body);
+        } else {
+            body(ui);
+        }
     });
 }
 

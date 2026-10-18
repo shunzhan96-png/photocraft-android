@@ -337,8 +337,9 @@ fn sheet(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let mut close = false;
     let mut run: Option<String> = None;
     panel.frame(frame).show(ui, |ui| {
-        // Header: what this is, and a close button.
-        crate::direction::horizontal_centered(ui, |ui| {
+        // Header: what this is, and a close button. Exactly one button tall: a row that filled the
+        // panel centred the title halfway down and left no room for the content below it.
+        ui.allocate_ui_with_layout(vec2(ui.available_width(), BTN), crate::direction::row(), |ui| {
             let title = match kind {
                 Sheet::Menu => tl!("Menu").to_string(),
                 Sheet::Panel(g) => GROUPS.iter().find(|x| x.0 == g).map(|x| tl!(x.2).to_string()).unwrap_or_default(),
