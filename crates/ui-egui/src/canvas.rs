@@ -2649,7 +2649,7 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         (crate::shortcuts::command_label(app, "New document…", "file.new"), crate::shortcuts::command_label(app, "Open…", "file.open"))
     };
     ui.scope_builder(egui::UiBuilder::new().max_rect(card), |ui| {
-        let body = |ui: &mut egui::Ui| {
+        let mut body = |ui: &mut egui::Ui| {
         ui.vertical_centered(|ui| {
             ui.horizontal(|ui| {
                 let title = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(38.0), t.text);
