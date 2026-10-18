@@ -1993,7 +1993,8 @@ fn documents(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         paint_dots(ui, ui.available_rect_before_wrap(), app.session.prefs().interface.show_canvas_dots);
         return;
     }
-    if !app.ui.view.hides_tabs() || opening {
+    // Touch layout: documents switch from the top bar (touch.rs), so no strip of small tabs here.
+    if (!app.ui.view.hides_tabs() && !crate::touch::on(ui.ctx())) || opening {
         // Flat Spectrum tabs sit directly against the canvas. The parent's default vertical
         // item spacing would otherwise leave a visible gap below the tab strip (#2188).
         let spacing = ui.spacing().item_spacing.y;

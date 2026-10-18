@@ -45,7 +45,7 @@ const TOOL_SECTIONS: &[&[&[Tool]]] = &[
 ];
 
 /// The tool a slot shows: the current tool if it belongs to the slot, else the last one used.
-fn slot_tool(ui: &egui::Ui, current: Tool, slot: &[Tool], key: egui::Id) -> Tool {
+pub(crate) fn slot_tool(ui: &egui::Ui, current: Tool, slot: &[Tool], key: egui::Id) -> Tool {
     if slot.contains(&current) {
         ui.data_mut(|d| d.insert_temp(key, current));
         return current;
@@ -58,7 +58,7 @@ fn slot_tool(ui: &egui::Ui, current: Tool, slot: &[Tool], key: egui::Id) -> Tool
 /// slot keeps only its visible tools, so its flyout lists just those; a slot with none left is
 /// dropped, and so is a section with no slots. Each slot carries its index in `TOOL_SECTIONS`,
 /// so its remembered tool and flyout stay put when other slots are hidden.
-fn visible_sections(hidden: &[String]) -> Vec<Vec<(usize, Vec<Tool>)>> {
+pub(crate) fn visible_sections(hidden: &[String]) -> Vec<Vec<(usize, Vec<Tool>)>> {
     let hidden: Vec<Tool> = hidden.iter().map(String::as_str).filter_map(Tool::from_name).collect();
     let mut index = 0usize;
     let mut sections = Vec::new();
@@ -923,8 +923,10 @@ fn options_bar_height(pro: bool, narrow: bool) -> f32 {
 pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let narrow = app.session.prefs().workspace.narrow_options_bar();
+    // Touch layout: a taller bar so 44 pt controls fit and a finger can hit them.
+    let touch = crate::touch::on(ui.ctx());
     egui::Panel::top("options_bar")
-        .exact_size(options_bar_height(t.pro, narrow))
+        .exact_size(if touch { 56.0 } else { options_bar_height(t.pro, narrow) })
         .frame(egui::Frame::NONE.fill(t.chrome).inner_margin(egui::Margin::symmetric(10, 0)))
         .show(ui, |ui| {
             ui.style_mut().spacing.scroll = egui::style::ScrollStyle { bar_width: 4.0, ..egui::style::ScrollStyle::floating() };
@@ -937,7 +939,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                     crate::chrome_ui::home_button(app, ui);
                     widgets::vline(ui, 22.0);
                 }
-                let tool_icon = icons::button(ui, icons::tool_icon(app.ui.tool), if t.pro { 26.0 } else { 28.0 }, !t.pro, tl!(app.ui.tool.label()));
+                let tool_icon = icons::button(ui, icons::tool_icon(app.ui.tool), if touch { 44.0 } else if t.pro { 26.0 } else { 28.0 }, !t.pro, tl!(app.ui.tool.label()));
                 // Photoshop: right-click the tool icon for Reset Tool / Reset All Tools (#2825).
                 let mut reset = None;
                 tool_icon.context_menu(|ui| {

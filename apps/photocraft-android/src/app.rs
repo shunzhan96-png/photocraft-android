@@ -45,6 +45,9 @@ fn run(android: AndroidApp) -> Result<(), String> {
         "PhotoCraft",
         options,
         Box::new(move |cc| {
+            // Touch layout (top bar, bottom tool bar, panel sheet, 44 pt controls). Before the theme,
+            // so the very first frame already has the bigger style.
+            photocraft_ui_egui::touch::enable(&cc.egui_ctx, true);
             PhotocraftApp::setup_context(&cc.egui_ctx, ThemeKind::Pro);
             let inbox: photocraft_ui_egui::Inbox = Arc::default();
             let mut services = crate::services::services(bridge.clone(), &files_dir);
