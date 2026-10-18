@@ -187,8 +187,15 @@ fn expand(packed: &str, keys: &[&str]) -> Result<String, String> {
 }
 
 /// The registry. English first: it is the fallback and the source language.
-pub static LANGUAGES: [LangInfo; 21] = [
+pub static LANGUAGES: [LangInfo; 26] = [
     LangInfo { code: "en", name: "English", source: b"", plural: plural_one_other, complete_menus: false, catalog: OnceLock::new() },
+    // Starter catalogs for Thai, Hindi and Arabic. Missing long-tail strings intentionally fall
+    // back to English until these translations have full menu coverage.
+    LangInfo { code: "ar", name: "العربية", source: catalog!("ar"), plural: plural_none, complete_menus: false, catalog: OnceLock::new() },
+    LangInfo { code: "hi", name: "हिन्दी", source: catalog!("hi"), plural: plural_none, complete_menus: false, catalog: OnceLock::new() },
+    LangInfo { code: "th", name: "ภาษาไทย", source: catalog!("th"), plural: plural_none, complete_menus: false, catalog: OnceLock::new() },
+    LangInfo { code: "bn", name: "বাংলা", source: catalog!("bn"), plural: plural_none, complete_menus: false, catalog: OnceLock::new() },
+    LangInfo { code: "fil", name: "Filipino", source: catalog!("fil"), plural: plural_none, complete_menus: false, catalog: OnceLock::new() },
     LangInfo { code: "ja", name: "日本語", source: catalog!("ja"), plural: plural_none, complete_menus: true, catalog: OnceLock::new() },
     LangInfo { code: "zh-hans", name: "简体中文", source: catalog!("zh-hans"), plural: plural_none, complete_menus: true, catalog: OnceLock::new() },
     // Traditional Chinese in the vocabulary used in Taiwan; `zh-TW`, `zh-HK`, `zh-MO` and `zh-Hant-*`

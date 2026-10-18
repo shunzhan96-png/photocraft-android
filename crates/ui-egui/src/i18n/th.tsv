@@ -1,0 +1,33 @@
+# Thai starter catalog. Translations are partial; untranslated strings fall back to English.
+# context <TAB> source <TAB> translation
+	File	ไฟล์
+	Edit	แก้ไข
+	Image	รูปภาพ
+	Layer	เลเยอร์
+	Select	เลือก
+	Filter	ฟิลเตอร์
+	View	มุมมอง
+	Window	หน้าต่าง
+	Help	ช่วยเหลือ
+	Open…	เปิด…
+	Save	บันทึก
+	Save As…	บันทึกเป็น…
+	Undo	เลิกทำ
+	Redo	ทำซ้ำ
+	Cancel	ยกเลิก
+	OK	ตกลง
+	Apply	นำไปใช้
+	Close	ปิด
+	Preferences	การตั้งค่า
+	About PhotoCraft	เกี่ยวกับ PhotoCraft
+	New Document…	เอกสารใหม่…
+	Zoom In	ซูมเข้า
+	Zoom Out	ซูมออก
+	Layers	เลเยอร์
+	History	ประวัติ
+	Color	สี
+	Brush	แปรง
+	Move	ย้าย
+	Crop	ครอบตัด
+	Text	ข้อความ
+	Settings	การตั้งค่า

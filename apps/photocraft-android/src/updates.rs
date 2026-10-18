@@ -1,27 +1,18 @@
-//! Help › Check for Updates… and Help › Check for Updates at Startup.
+//! Help › Check for Updates…
 //!
-//! The Activity does the checking, downloading and installing (`Updater.java`, from the fork's
-//! GitHub releases); Rust only asks it to check now (the bridge's `check-update` marker) and keeps
-//! the startup setting, a `update-check-off` marker in the files directory that the Activity reads
-//! at launch.
+//! Updates are manual-only: Rust asks the Activity to check now (the bridge's `check-update`
+//! marker), and the Activity handles fetching, downloading and installation. Nothing checks at
+//! launch and there is no startup-notification preference to confuse users.
 
 use crate::bridge::Bridge;
 use photocraft_ui_egui::menus::MenuItem;
 use photocraft_ui_egui::platform_menu::PlatformMenu;
 use serde_json::Value;
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 const CHECK: &str = "android.update.check";
-const AT_STARTUP: &str = "android.update.atStartup";
-
-fn off_marker(files_dir: &Path) -> PathBuf {
-    files_dir.join("update-check-off")
-}
-
-/// The Help rows.
-pub fn menu(files_dir: &Path, bridge: Arc<Bridge>) -> PlatformMenu {
-    let (read, write) = (off_marker(files_dir), off_marker(files_dir));
+/// The Help row. The directory argument is retained for API compatibility with the Android shell.
+pub fn menu(_files_dir: &std::path::Path, bridge: Arc<Bridge>) -> PlatformMenu {
     PlatformMenu {
         items: Box::new(move || {
             let row = |id: &str, label: &str, checked: Option<bool>| MenuItem {
@@ -33,15 +24,11 @@ pub fn menu(files_dir: &Path, bridge: Arc<Bridge>) -> PlatformMenu {
                 checked,
                 color: None,
             };
-            vec![row(CHECK, "Check for Updates…", None), row(AT_STARTUP, "Check for Updates at Startup", Some(!read.exists()))]
+            vec![row(CHECK, "Check for Updates…", None)]
         }),
         run: Box::new(move |id| {
             match id {
                 CHECK => bridge.request_update_check()?,
-                AT_STARTUP => {
-                    let result = if write.exists() { std::fs::remove_file(&write) } else { std::fs::write(&write, b"") };
-                    result.map_err(|e| format!("couldn't change the update setting: {e}"))?;
-                }
                 _ => return Err(format!("unknown update command {id}")),
             }
             Ok(Value::Null)
@@ -69,6 +56,7 @@ pub fn combine(menus: Vec<PlatformMenu>) -> PlatformMenu {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     fn dir() -> PathBuf {
         let d = std::env::temp_dir().join(format!("pc-updates-{}-{:?}", std::process::id(), std::thread::current().id()));
@@ -77,17 +65,14 @@ mod tests {
     }
 
     #[test]
-    fn rows_ask_for_a_check_and_toggle_the_startup_check() {
+    fn updates_are_manual_only() {
         let d = dir();
         let bridge = Arc::new(Bridge::new(&d).unwrap());
         let mut m = menu(&d, bridge.clone());
-        let checked = |m: &PlatformMenu| (m.items)().iter().find(|i| i.id == AT_STARTUP).and_then(|i| i.checked);
-        assert_eq!(checked(&m), Some(true), "on by default");
-        (m.run)(AT_STARTUP).unwrap();
-        assert_eq!(checked(&m), Some(false));
-        assert!(d.join("update-check-off").exists(), "the Activity reads this");
-        (m.run)(AT_STARTUP).unwrap();
-        assert_eq!(checked(&m), Some(true));
+        let items = (m.items)();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].id, CHECK);
+        assert_eq!(items[0].label, "Check for Updates…");
         (m.run)(CHECK).unwrap();
         assert!(bridge.root().join("check-update").exists());
         assert!((m.run)("android.nope").is_err());

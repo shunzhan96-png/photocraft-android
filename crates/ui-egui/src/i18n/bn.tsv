@@ -1,0 +1,35 @@
+# Bengali starter catalog. Untranslated strings fall back to English.
+# context <TAB> source <TAB> translation
+	File	ফাইল
+	Edit	সম্পাদনা
+	Image	ছবি
+	Layer	স্তর
+	Select	নির্বাচন
+	Filter	ফিল্টার
+	View	দেখুন
+	Window	উইন্ডো
+	Help	সাহায্য
+	Open…	খুলুন…
+	Save	সংরক্ষণ
+	Save As…	নতুন নামে সংরক্ষণ…
+	Undo	পূর্বাবস্থায় ফেরান
+	Redo	আবার করুন
+	Cancel	বাতিল
+	OK	ঠিক আছে
+	Apply	প্রয়োগ
+	Close	বন্ধ করুন
+	Preferences	পছন্দসমূহ
+	About PhotoCraft	PhotoCraft সম্পর্কে
+	New Document…	নতুন ডকুমেন্ট…
+	Zoom In	জুম বাড়ান
+	Zoom Out	জুম কমান
+	Layers	স্তরসমূহ
+	History	ইতিহাস
+	Color	রং
+	Brush	তুলি
+	Move	সরান
+	Crop	ক্রপ
+	Text	লেখা
+	Settings	সেটিংস
+	Create a new document or open an existing file.	নতুন ডকুমেন্ট তৈরি করুন অথবা বিদ্যমান ফাইল খুলুন।
+	Recent	সাম্প্রতিক

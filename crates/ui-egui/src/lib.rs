@@ -201,6 +201,7 @@ mod tab_strip;
 pub mod targa_options_ui;
 pub mod text_field_menu;
 pub mod theme;
+pub mod touch;
 pub mod tiff_options_ui;
 mod tile_overlay;
 mod timeline_ui;
@@ -1827,20 +1828,25 @@ impl eframe::App for PhotocraftApp {
         // system title bar this is where the document name lives, as the in-app title is hidden.
         panels::sync_window_title(self, &ctx);
         let chrome = !self.ui.view.hides_chrome();
-        if chrome && self.ui.panels.menu_bar {
-            panels::title_bar(self, ui);
-        }
-        if chrome && self.ui.panels.options_bar {
-            panels::options_bar(self, ui);
-        }
-        if chrome && self.ui.panels.status_bar {
-            panels::status_bar(self, ui);
-        }
-        if chrome && self.ui.panels.toolbar {
-            panels::toolbar(self, ui);
-        }
-        if chrome && self.ui.panels.dock {
-            panels::right_dock(self, ui);
+        if chrome && touch::on(&ctx) {
+            // Phones and tablets: top bar, bottom tool bar and a panel sheet (touch.rs).
+            touch::chrome(self, ui);
+        } else {
+            if chrome && self.ui.panels.menu_bar {
+                panels::title_bar(self, ui);
+            }
+            if chrome && self.ui.panels.options_bar {
+                panels::options_bar(self, ui);
+            }
+            if chrome && self.ui.panels.status_bar {
+                panels::status_bar(self, ui);
+            }
+            if chrome && self.ui.panels.toolbar {
+                panels::toolbar(self, ui);
+            }
+            if chrome && self.ui.panels.dock {
+                panels::right_dock(self, ui);
+            }
         }
         let t = theme::Tokens::get(&ctx);
         let backdrop = if chrome { prefs_ui::pasteboard_color(self).unwrap_or(t.canvas) } else { egui::Color32::BLACK };

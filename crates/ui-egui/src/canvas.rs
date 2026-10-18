@@ -1993,7 +1993,8 @@ fn documents(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         paint_dots(ui, ui.available_rect_before_wrap(), app.session.prefs().interface.show_canvas_dots);
         return;
     }
-    if !app.ui.view.hides_tabs() || opening {
+    // Touch layout: documents switch from the top bar (touch.rs), so no strip of small tabs here.
+    if (!app.ui.view.hides_tabs() && !crate::touch::on(ui.ctx())) || opening {
         // Flat Spectrum tabs sit directly against the canvas. The parent's default vertical
         // item spacing would otherwise leave a visible gap below the tab strip (#2188).
         let spacing = ui.spacing().item_spacing.y;
@@ -2631,13 +2632,28 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     // File › Open Recent, newest first (on the web there are no paths to reopen).
     let recent: Vec<String> = if cfg!(target_arch = "wasm32") { Vec::new() } else { app.ui.recent_files.iter().take(HOME_RECENT).cloned().collect() };
     let recent_h = if recent.is_empty() { 0.0 } else { 34.0 + recent.len() as f32 * HOME_RECENT_ROW };
-    let card = Rect::from_center_size(area.center(), egui::vec2(460.0, 330.0 + recent_h));
-    let new_label = crate::shortcuts::command_label(app, "New document…", "file.new");
-    let open_label = crate::shortcuts::command_label(app, "Open…", "file.open");
+    // Touch: the card is as wide as the screen allows and scrolls, instead of a fixed 460 x 330+
+    // block centred on a phone that is narrower (portrait) or shorter (landscape) than that.
+    let touch = crate::touch::on(ui.ctx());
+    let content_h = 330.0 + recent_h;
+    let card_w = if touch { (area.width() - 24.0).clamp(200.0, 460.0) } else { 460.0 };
+    let card = if touch {
+        let top = area.top() + ((area.height() - content_h) / 2.0).clamp(8.0, 96.0);
+        Rect::from_min_max(pos2(area.center().x - card_w / 2.0, top), pos2(area.center().x + card_w / 2.0, area.bottom()))
+    } else {
+        Rect::from_center_size(area.center(), egui::vec2(460.0, content_h))
+    };
+    let (new_label, open_label) = if touch {
+        (tl!("New document…").to_string(), tl!("Open…").to_string())
+    } else {
+        (crate::shortcuts::command_label(app, "New document…", "file.new"), crate::shortcuts::command_label(app, "Open…", "file.open"))
+    };
     ui.scope_builder(egui::UiBuilder::new().max_rect(card), |ui| {
+        let mut body = |ui: &mut egui::Ui| {
         ui.vertical_centered(|ui| {
             ui.horizontal(|ui| {
-                let title = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(38.0), t.text);
+                let title_size = if touch && card.width() < 320.0 { 30.0 } else if touch { 34.0 } else { 38.0 };
+                let title = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(title_size), t.text);
                 let by = ui.painter().layout_no_wrap(tl!("open source").into(), egui::FontId::proportional(13.0), t.text_faint);
                 let total = title.size().x + by.size().x + 10.0;
                 ui.add_space(((card.width() - total) / 2.0).max(0.0));
@@ -2649,18 +2665,29 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             ui.add_space(6.0);
             ui.label(egui::RichText::new(tl!("Create a new document or open an existing file.")).color(t.text_dim).size(14.0));
             ui.add_space(22.0);
-            ui.horizontal(|ui| {
-                ui.add_space(((card.width() - 2.0 * 190.0 - 12.0) / 2.0).max(0.0));
-                ui.spacing_mut().item_spacing.x = 12.0;
-                if crate::widgets::primary_button(ui, &new_label, 190.0).clicked() {
+            let mut buttons = |ui: &mut egui::Ui, bw: f32| {
+                if crate::widgets::primary_button(ui, &new_label, bw).clicked() {
                     let fields = app.new_document_fields();
                     app.ui.open_dialog(crate::state::DialogKind::NewDocument, fields);
                 }
-                if crate::widgets::secondary_button(ui, &open_label, 190.0).clicked() {
+                if crate::widgets::secondary_button(ui, &open_label, bw).clicked() {
                     let _ = app.open_dialog_file();
                 }
-            });
+            };
+            if touch {
+                // Stacked and full width: easy to hit with a thumb at any screen width.
+                ui.spacing_mut().item_spacing.y = 10.0;
+                buttons(ui, card_w.min(320.0));
+            } else {
+                ui.horizontal(|ui| {
+                    ui.add_space(((card.width() - 2.0 * 190.0 - 12.0) / 2.0).max(0.0));
+                    ui.spacing_mut().item_spacing.x = 12.0;
+                    buttons(ui, 190.0);
+                });
+            }
             ui.add_space(22.0);
+            // Nothing can be dropped on a touch screen, so no hint there.
+            if !touch {
             ui.horizontal(|ui| {
                 let msg = start_screen_drop_hint(app);
                 let g = ui.painter().layout_no_wrap(msg.to_string(), egui::FontId::proportional(12.5), t.text_faint);
@@ -2669,6 +2696,7 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 crate::icons::paint(ui, r, "image", 15.0, t.text_faint);
                 ui.label(egui::RichText::new(msg).color(t.text_faint));
             });
+            }
             if !recent.is_empty() {
                 ui.add_space(22.0);
                 home_recent(app, ui, &recent);
@@ -2678,6 +2706,12 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             ui.add_space(10.0);
             crate::links::link_row(app, ui);
         });
+        };
+        if touch {
+            egui::ScrollArea::vertical().id_salt("start-screen-scroll").auto_shrink([false, false]).show(ui, body);
+        } else {
+            body(ui);
+        }
     });
 }
 
@@ -2700,9 +2734,11 @@ const HOME_RECENT_ROW: f32 = 30.0;
 /// and Clear Recent Files (#2691).
 fn home_recent(app: &mut PhotocraftApp, ui: &mut egui::Ui, recent: &[String]) {
     let t = crate::theme::Tokens::get(ui.ctx());
-    let width = 380.0;
+    // Recent rows used to stay 380 pt wide even when the touch card was narrower than that.
+    // Keep the desktop width cap, but fit the actual available mobile content width.
+    let width = ui.available_width().min(380.0).max(0.0);
     ui.horizontal(|ui| {
-        // Line the heading up with the file icons.
+        // Line the heading up with the file icons while keeping it inside narrow phone cards.
         ui.add_space(((ui.available_width() - width) / 2.0).max(0.0) + 8.0);
         ui.label(egui::RichText::new(tl!("Recent")).font(crate::theme::semibold(12.5)).color(t.text_dim));
     });
@@ -2724,7 +2760,7 @@ fn home_recent(app: &mut PhotocraftApp, ui: &mut egui::Ui, recent: &[String]) {
         let icon = Rect::from_center_size(egui::pos2(row.left() + 16.0, row.center().y), egui::vec2(16.0, 16.0));
         crate::icons::paint(ui, icon, "file", 14.0, t.text_dim);
         let x = row.left() + 32.0;
-        let name_g = crate::tab_strip::elided(ui, &name, egui::FontId::proportional(12.5), t.text, 170.0);
+        let name_g = crate::tab_strip::elided(ui, &name, egui::FontId::proportional(12.5), t.text, (width - 64.0).clamp(40.0, 170.0));
         let name_w = name_g.size().x;
         ui.painter().galley(egui::pos2(x, row.center().y - name_g.size().y / 2.0), name_g, t.text);
         let folder_max = (right - (x + name_w + 14.0)).max(0.0);
@@ -2866,6 +2902,17 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     let xf = ViewXform { rect, zoom: point_zoom, center: view.center, flip, rotation: view.rotation, aspect };
     let pixel_grid = app.ui.view.shows(app.ui.view.show.pixel_grid);
     let response = ui.allocate_rect(rect, Sense::click_and_drag());
+    // A two-finger gesture belongs to canvas navigation, never to the active painting tool.
+    // Finish an in-progress live stroke at its last valid point before handing the pointers to
+    // pinch/pan, otherwise the first finger can leave a long accidental line behind.
+    let multi_touch_active = ctx.input(|i| i.multi_touch().is_some());
+    if multi_touch_active && app.press_stroke {
+        if let Some(d) = app.drag.as_ref().and_then(|drag| drag.points.last().map(|p| [p[0], p[1]])) {
+            tool_event(app, ToolEvent::Up { x: d[0], y: d[1] }, egui::Modifiers::NONE);
+        }
+        app.press_stroke = false;
+    }
+    let primary = primary && !multi_touch_active;
     let stroke_dismissal = primary && crate::shape_stroke_ui::dismiss_from_canvas(app, &response);
     let painter = ui.painter_at(rect);
 
@@ -3123,6 +3170,22 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     // Navigation (wheel_nav.rs): scroll pans (⇧ or ⌘/Ctrl sideways); pinch and ⌥-scroll zoom around the pointer.
     let wheel =
         crate::wheel_nav::read(&ctx, app.session.prefs().general.zoom_with_scroll_wheel, app.session.prefs().enhanced_controls.zoom_with_trackpad_pinch);
+    // Native egui multi-touch input is available on touch devices as well as trackpads. Keep the
+    // point under the gesture centre anchored while pinching, and translate the camera with the
+    // two-finger drag. The primary tool path above is disabled for the entire gesture.
+    if let Some(gesture) = ctx.input(|i| i.multi_touch()) {
+        if gesture.zoom_delta.is_finite() && gesture.zoom_delta > 0.0 && gesture.zoom_delta != 1.0 {
+            let nz = crate::zoom_levels::clamp(view.zoom * gesture.zoom_delta, view.doc_size);
+            if nz != view.zoom {
+                zoom_about(&mut view, &xf, gesture.center_pos, nz, false, ppp);
+            }
+        }
+        if gesture.translation_delta.x.is_finite() && gesture.translation_delta.y.is_finite() {
+            let d = xf.unmap_vec(gesture.translation_delta) / (view.zoom / ppp);
+            view.center[0] -= d.x;
+            view.center[1] -= d.y;
+        }
+    }
     // The wheel also scrolls over the scrollbars drawn on top of the canvas (last frame's hover).
     let bars_id = egui::Id::new(("pc-canvas-bars-hover", idx));
     let over_bars = ctx.data(|d| d.get_temp::<bool>(bars_id)).unwrap_or(false);

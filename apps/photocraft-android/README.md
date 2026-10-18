@@ -1,10 +1,19 @@
 # PhotoCraft for Android tablets (prototype)
 
+Unofficial Android UI improvements by [ZedissP](https://github.com/zedisspp).
+
+This branch also scans Android's system font partitions for script fallback, includes starter UI
+catalogs for Arabic, Hindi, Thai, Bengali and Filipino, makes the home/recent-file card fit narrow
+phone screens, uses compact mobile menu rows, and keeps update checks manual-only. The canvas now
+uses egui multi-touch gestures for anchored pinch zoom and two-finger panning, and suppresses the
+active painting tool during navigation gestures. Real-device testing is still required because
+Android's GameActivity/winit event delivery varies by device and input source.
+
 The same PhotoCraft app (engine, compositor, brushes, file formats, egui UI) running on Android
 tablets: an arm64-v8a APK, minimum Android 8.0 (API 26), built for Android 15 (API 35).
 
 Status: **functional prototype.** It builds, installs and starts; editing, file access and pen
-input are wired up. It is not tuned for touch-first use yet (see [Not supported](#not-supported-yet)).
+input are wired up. It has a touch-first layout (see [Touch layout](#touch-layout)); some areas are still desktop-sized (see [Not supported](#not-supported-yet)).
 
 ## How it fits together
 
@@ -107,9 +116,9 @@ hardware keyboard; wheel steps run app commands (`view.zoomIn`, `view.rotateView
 
 ## Updates
 
-The app updates itself from this fork's GitHub releases (`Updater.java`). At launch (Help ›
-Check for Updates at Startup, on by default) and from Help › Check for Updates…, it reads the
-release list (pre-releases included) and takes the newest release tagged
+The app checks for updates only when the user explicitly chooses Help › Check for Updates…
+(`Updater.java`). It no longer checks at launch or displays an update dialog on startup. Manual
+checks read the release list (pre-releases included) and take the newest release tagged
 `android-v<version>[-<build>]` with an APK attached. When that is newer than the installed
 version (`0.8.2-3` beats `0.8.2-2` and `0.8.2`), a dialog shows the release notes' "New in this
 build" section and offers **Install**, **Later** or **Skip This Version** (a skipped version is
@@ -194,16 +203,37 @@ Everything in the shared engine and UI: layers, masks, adjustments, filters, bru
 vectors, history, PSD/PSB, .pcraft, PNG/JPEG/WebP/TIFF/GIF/BMP/EXR/HDR, raw files, Affinity and
 OpenRaster import, export settings, preferences, brush presets.
 
+## Touch layout
+
+The shell turns on `photocraft_ui_egui::touch` (`crates/ui-egui/src/touch.rs`) before the theme is
+built, so the desktop chrome (ten menu titles, a toolbox column, a 250–520 pt dock, 24 pt controls) is
+replaced by a layout that fits a finger and a 360 pt wide screen. Points are dp on Android.
+
+- **Top bar** (56 pt): Menu, the document name (tap to switch documents when several are open; the
+  status message shows under it), Undo, Redo.
+- **Options bar** under it: the tool's options, scrolling sideways instead of running off the screen.
+- **Bottom bar**: every tool slot as a 48 pt button in a sideways-scrolling strip. Tap the selected
+  button of a slot with a corner mark again to open its flyout above it. At the far end: the colour
+  chips (open Color & Swatches) and Panels.
+- **Sheet** above the bottom bar (a 380 pt side panel from 840 pt wide up): Layers, Color,
+  Properties, History, Navigator and Character, each with its tabs, or the Menu as 52 pt rows, one
+  level at a time (the same menu tree and command ids as the desktop bar). Drag its top edge to resize.
+- **Style** (`theme::touch_tune`): 15 pt body text, 44 pt minimum hit size, wider padding and scroll bars.
+- The document tab strip and the status bar are not shown.
+
+`touch::enable(ctx, false)` (or never calling it) keeps the desktop layout, which the desktop and web
+apps do.
+
 ## Not supported yet
 
 | Area | State on Android |
 |---|---|
 | On-screen keyboard | Typing works (see above), but the keyboard covers the lower half of the screen without resizing the UI (including the pad's keyboard key: use the keyboard's own hide key). Shortcuts with modifiers need a hardware keyboard or a pad key holding the modifier. Typing on a Type layer on the canvas is untested. |
-| Touch gestures | Fingers act as a mouse (egui's touch emulation): no pinch-zoom/two-finger pan of the canvas and no palm rejection (a resting palm can click or paint; the pen's pressure/tilt are unaffected by it). Use the zoom/hand tools. |
+| Touch gestures | Finger input currently uses egui's pointer emulation. Native pinch-zoom/two-finger pan and palm rejection are not yet implemented; use the Zoom/Hand tools or the Shortcut Pad wheel. Stylus pressure/tilt remain supported. |
 | Pen hover | Hover moves are not forwarded by winit 0.30: no brush cursor preview while hovering. The eraser end switches tools on contact, not on proximity, so the first eraser-end touch after flipping still uses the previous tool for that stroke. |
 | Barrel rotation | Android has no standard axis for it: rotation stays 0 (Wacom Art Pen rotation is not read). |
 | Pen buttons | Barrel buttons are not mapped to shortcuts. |
-| UI density | The desktop (Photoshop-like) layout is used unchanged; on small tablets panels are dense. |
+| UI density | The chrome is touch-sized (see Touch layout), but dialogs, floating panels and the options bar's own fields are still the desktop widgets: some fixed-size controls stay under 44 pt and a few large windows can exceed a phone screen. |
 | Clipboard images, screen color picker, display ICC profiles | Not available (no Android services wired). |
 | Crash-recovery autosave | Not wired; save often. |
 | TCP control server / MCP | Not available. |

@@ -1,0 +1,33 @@
+# Arabic starter catalog. Translations are partial; untranslated strings fall back to English.
+# context <TAB> source <TAB> translation
+	File	ملف
+	Edit	تحرير
+	Image	صورة
+	Layer	طبقة
+	Select	تحديد
+	Filter	مرشح
+	View	عرض
+	Window	نافذة
+	Help	مساعدة
+	Open…	فتح…
+	Save	حفظ
+	Save As…	حفظ باسم…
+	Undo	تراجع
+	Redo	إعادة
+	Cancel	إلغاء
+	OK	موافق
+	Apply	تطبيق
+	Close	إغلاق
+	Preferences	التفضيلات
+	About PhotoCraft	حول PhotoCraft
+	New Document…	مستند جديد…
+	Zoom In	تكبير
+	Zoom Out	تصغير
+	Layers	الطبقات
+	History	السجل
+	Color	اللون
+	Brush	فرشاة
+	Move	تحريك
+	Crop	اقتصاص
+	Text	نص
+	Settings	الإعدادات

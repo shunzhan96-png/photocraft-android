@@ -1018,6 +1018,7 @@ pub fn apply(ctx: &egui::Context, kind: ThemeKind) {
         wv.expansion = 0.0;
     }
     ctx.set_visuals(v);
+    let touch = crate::touch::on(ctx);
     ctx.global_style_mut(|s| {
         s.text_styles = [
             (TextStyle::Small, FontId::proportional(10.5)),
@@ -1048,12 +1049,38 @@ pub fn apply(ctx: &egui::Context, kind: ThemeKind) {
         }
         s.spacing.scroll = scroll;
         s.spacing.tooltip_width = 280.0;
+        if touch {
+            touch_tune(s);
+        }
     });
     // egui selects its style branch using OS appearance, independently of PhotoCraft's fixed
     // Dark/Light mode or platform appearance service. Both branches need the selected palette.
     let style = ctx.global_style();
     ctx.set_style_of(egui::Theme::Light, Arc::clone(&style));
     ctx.set_style_of(egui::Theme::Dark, style);
+}
+
+/// Touch metrics (the Android shell): bigger text, 44 pt minimum hit size, roomier padding and
+/// spacing, wider scroll bars. Points are dp on Android, so 44 pt is about 7 mm under a finger.
+pub(crate) fn touch_tune(s: &mut egui::Style) {
+    s.text_styles = [
+        (TextStyle::Small, FontId::proportional(13.0)),
+        (TextStyle::Body, FontId::proportional(15.0)),
+        (TextStyle::Button, FontId::proportional(15.0)),
+        (TextStyle::Heading, semibold(18.0)),
+        (TextStyle::Monospace, FontId::monospace(14.0)),
+    ]
+    .into();
+    s.spacing.item_spacing = egui::vec2(10.0, 8.0);
+    s.spacing.button_padding = egui::vec2(14.0, 8.0);
+    s.spacing.interact_size = egui::vec2(44.0, 44.0);
+    s.spacing.slider_width = 180.0;
+    s.spacing.combo_width = 150.0;
+    s.spacing.icon_width = 22.0;
+    s.spacing.menu_margin = egui::Margin::same(8);
+    s.spacing.window_margin = egui::Margin::same(12);
+    s.spacing.scroll.bar_width = 10.0;
+    s.spacing.scroll.floating_width = 6.0;
 }
 
 /// Seconds the pointer rests on a control before its tooltip shows.

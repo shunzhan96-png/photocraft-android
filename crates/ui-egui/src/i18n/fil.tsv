@@ -1,0 +1,35 @@
+# Filipino starter catalog. Untranslated strings fall back to English.
+# context <TAB> source <TAB> translation
+	File	File
+	Edit	I-edit
+	Image	Larawan
+	Layer	Layer
+	Select	Piliin
+	Filter	Filter
+	View	Tingnan
+	Window	Window
+	Help	Tulong
+	Open…	Buksan…
+	Save	I-save
+	Save As…	I-save bilang…
+	Undo	I-undo
+	Redo	Ulitin
+	Cancel	Kanselahin
+	OK	OK
+	Apply	Ilapat
+	Close	Isara
+	Preferences	Mga kagustuhan
+	About PhotoCraft	Tungkol sa PhotoCraft
+	New Document…	Bagong dokumento…
+	Zoom In	Palakihin
+	Zoom Out	Paliitin
+	Layers	Mga layer
+	History	Kasaysayan
+	Color	Kulay
+	Brush	Brush
+	Move	Ilipat
+	Crop	I-crop
+	Text	Teksto
+	Settings	Mga setting
+	Create a new document or open an existing file.	Gumawa ng bagong dokumento o magbukas ng umiiral na file.
+	Recent	Kamakailan

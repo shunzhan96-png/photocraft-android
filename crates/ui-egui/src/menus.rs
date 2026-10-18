@@ -1281,6 +1281,85 @@ pub fn menu_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) -> f32 {
     edge
 }
 
+/// One full-width, 52 pt row of the touch menu. `true` when it was tapped (and is enabled).
+fn touch_row(ui: &mut egui::Ui, t: &crate::theme::Tokens, text: &str, enabled: bool, chevron: bool) -> bool {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 52.0), egui::Sense::click());
+    if enabled && resp.is_pointer_button_down_on() {
+        ui.painter().rect_filled(rect, t.radius_sm, t.pressed);
+    }
+    let color = if enabled { t.text } else { t.text_faint };
+    ui.painter().text(rect.left_center() + egui::vec2(14.0, 0.0), egui::Align2::LEFT_CENTER, text, egui::FontId::proportional(16.0), color);
+    if chevron {
+        ui.painter().text(rect.right_center() - egui::vec2(16.0, 0.0), egui::Align2::RIGHT_CENTER, "\u{203A}", egui::FontId::proportional(22.0), t.text_faint);
+    }
+    ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], egui::Stroke::new(1.0, t.separator));
+    enabled && resp.clicked()
+}
+
+/// The menu tree for the touch layout (`touch.rs`): big rows, one level at a time instead of ten
+/// titles across the top. `path` is where the person is: empty lists the menus, `["File"]` that
+/// menu, `["File", "Open Recent"]` a submenu. Returns the command id of a tapped item; the caller
+/// runs it (`invoke`) and closes the sheet.
+pub(crate) fn touch_menu(app: &mut PhotocraftApp, ui: &mut egui::Ui, path: &mut Vec<String>) -> Option<String> {
+    let lang = crate::i18n::current();
+    let t = crate::theme::Tokens::get(ui.ctx());
+    ui.spacing_mut().item_spacing.y = 0.0;
+    if path.is_empty() {
+        for top in TOP_MENUS {
+            if touch_row(ui, &t, &crate::i18n::tr(lang, top), true, true) {
+                path.push(top.to_string());
+            }
+        }
+        return None;
+    }
+    let back = format!("\u{2039}  {}", crate::i18n::tr(lang, path.last().map(String::as_str).unwrap_or("")));
+    if touch_row(ui, &t, &back, true, false) {
+        path.pop();
+        return None;
+    }
+    // Same cache as the desktop bar: building every item's state costs milliseconds on big documents.
+    let state = crate::native_menu::state_hash(app, None);
+    let input = crate::native_menu::had_input(ui.ctx());
+    let items = app.menu_cache.take().and_then(|c| c.reuse(state, input)).unwrap_or_else(|| menu_items(app));
+    let cache = ItemCache { state, items };
+    let depth = path.len();
+    let mut chosen: Option<String> = None;
+    {
+        let here: Vec<&MenuItem> = cache.items.iter().filter(|i| i.path.len() >= depth && i.path[..depth] == path[..]).collect();
+        let mut shown_subs: Vec<&str> = Vec::new();
+        let mut descend: Option<String> = None;
+        for it in &here {
+            if it.path.len() == depth {
+                // The rows already have hairlines between them.
+                if it.label == "---" {
+                    continue;
+                }
+                let mut text = translated_menu_label(lang, it);
+                if let Some(c) = it.checked {
+                    text = format!("{} {}", if c { "\u{2714}" } else { "  " }, text);
+                }
+                if touch_row(ui, &t, &text, it.enabled, false) {
+                    chosen = Some(it.id.clone());
+                }
+            } else if let Some(name) = it.path.get(depth).map(String::as_str) {
+                if shown_subs.contains(&name) {
+                    continue;
+                }
+                shown_subs.push(name);
+                let child: Vec<&MenuItem> = here.iter().copied().filter(|c| c.path.len() > depth && c.path[depth] == name).collect();
+                if touch_row(ui, &t, &crate::i18n::tr(lang, name), submenu_enabled(&child), true) {
+                    descend = Some(name.to_string());
+                }
+            }
+        }
+        if let Some(name) = descend {
+            path.push(name);
+        }
+    }
+    app.menu_cache = Some(cache);
+    chosen
+}
+
 fn press_gesture_id() -> egui::Id {
     egui::Id::new("menu-press-gesture")
 }

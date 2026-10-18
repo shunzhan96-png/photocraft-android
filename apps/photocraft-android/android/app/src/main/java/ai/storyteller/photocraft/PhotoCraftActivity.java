@@ -95,11 +95,9 @@ public class PhotoCraftActivity extends GameActivity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         bridge = new File(getFilesDir(), "bridge");
+        // Updates are opt-in only. Never show an update notification/dialog on launch; users
+        // can still invoke Help > Check for Updates when they want to check manually.
         updater = new Updater(this);
-        if (state == null && updater.checkAtStartup()) {
-            // A moment after launch, so the first frames aren't competing with it.
-            handler.postDelayed(() -> updater.check(false), 4000);
-        }
         if (state != null) {
             pendingId = state.getLong("pendingId", -1);
             pendingName = state.getString("pendingName", "");
