@@ -42,9 +42,8 @@ import java.util.regex.Pattern;
  * Updates from the fork's GitHub releases.
  *
  * <p>Releases are tagged {@code android-v<major>.<minor>.<patch>[-<build>]} (pre-releases
- * included) with the APK attached. At startup (unless Help › Check for Updates at Startup is
- * off) and from Help › Check for Updates…, the newest such release is compared with this build's
- * version name ({@code 0.8.2-3-android}); when it is newer, a dialog offers to install it, wait,
+ * included) with the APK attached. Only Help › Check for Updates… starts a check; the app does
+ * not check for updates at launch. The newest such release is compared with this build's version name ({@code 0.8.2-3-android}); when it is newer, a dialog offers to install it, wait,
  * or skip that version. Installing downloads the APK into the cache and hands it to Android's
  * package installer, which asks the user to confirm (and, the first time, to allow PhotoCraft to
  * install apps). Updates only install when they are signed with the same key as this build.
@@ -78,11 +77,6 @@ final class Updater {
     Updater(Activity activity) {
         this.activity = activity;
         this.filesDir = activity.getFilesDir();
-    }
-
-    /** Whether the startup check is on (Help › Check for Updates at Startup; Rust owns the file). */
-    boolean checkAtStartup() {
-        return !new File(filesDir, "update-check-off").exists();
     }
 
     /**

@@ -1,0 +1,33 @@
+# Hindi starter catalog. Translations are partial; untranslated strings fall back to English.
+# context <TAB> source <TAB> translation
+	File	फ़ाइल
+	Edit	संपादित करें
+	Image	छवि
+	Layer	लेयर
+	Select	चयन
+	Filter	फ़िल्टर
+	View	दृश्य
+	Window	विंडो
+	Help	सहायता
+	Open…	खोलें…
+	Save	सहेजें
+	Save As…	इस रूप में सहेजें…
+	Undo	पूर्ववत करें
+	Redo	फिर से करें
+	Cancel	रद्द करें
+	OK	ठीक है
+	Apply	लागू करें
+	Close	बंद करें
+	Preferences	प्राथमिकताएँ
+	About PhotoCraft	PhotoCraft के बारे में
+	New Document…	नया दस्तावेज़…
+	Zoom In	ज़ूम इन
+	Zoom Out	ज़ूम आउट
+	Layers	लेयर
+	History	इतिहास
+	Color	रंग
+	Brush	ब्रश
+	Move	स्थानांतरित करें
+	Crop	क्रॉप
+	Text	पाठ
+	Settings	सेटिंग

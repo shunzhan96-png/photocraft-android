@@ -766,7 +766,23 @@ pub(crate) fn system_font_dirs() -> Vec<std::path::PathBuf> {
     use std::path::PathBuf;
     let home = std::env::var_os("HOME").map(PathBuf::from);
     let mut v = Vec::new();
-    if cfg!(target_os = "macos") {
+    if cfg!(target_os = "android") {
+        // Android's system fonts are not under the Unix/Linux font directories. Without these
+        // paths the bundled Latin fonts are the only fallback and CJK/Indic/Arabic glyphs can
+        // render as tofu (□) even when the device itself has the required fonts installed.
+        for path in [
+            "/system/fonts",
+            "/system_ext/fonts",
+            "/product/fonts",
+            "/vendor/fonts",
+            "/apex/com.android.art/fonts",
+        ] {
+            v.push(PathBuf::from(path));
+        }
+        if let Some(h) = &home {
+            v.push(h.join("fonts"));
+        }
+    } else if cfg!(target_os = "macos") {
         v.push(PathBuf::from("/System/Library/Fonts"));
         v.push(PathBuf::from("/Library/Fonts"));
         if let Some(h) = &home {

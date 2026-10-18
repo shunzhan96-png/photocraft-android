@@ -6,6 +6,9 @@ contextual, command-ID and plural translations; missing entries fall back to Eng
 
 ## Supported languages
 
+Thai (`th`), Hindi (`hi`) and Arabic (`ar`) are now available as starter catalogs. Their most common controls are translated and all remaining strings fall back to English; they are intentionally marked incomplete until the full menu and generated-label coverage is translated and reviewed. Arabic uses right-to-left chrome.
+
+
 | Language | Preference code | Integer plural forms |
 |---|---|---|
 | English | `en` | one / other |
@@ -28,6 +31,9 @@ contextual, command-ID and plural translations; missing entries fall back to Eng
 | Magyar | `hu` | one form |
 | Tiếng Việt | `vi` | one form |
 | Srpski | `sr` | one / few / many (teens use many) |
+| العربية (starter catalog) | `ar` | one form; untranslated strings fall back to English |
+| हिन्दी (starter catalog) | `hi` | one form; untranslated strings fall back to English |
+| ภาษาไทย (starter catalog) | `th` | one form; untranslated strings fall back to English |
 
 Languages registered with `complete_menus` cover the current menu labels, `tl!` literals, blend
 mode names, and generated preference labels; tests enforce that coverage. Vietnamese (`vi`) is

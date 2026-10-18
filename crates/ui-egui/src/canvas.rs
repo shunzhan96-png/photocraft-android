@@ -2652,7 +2652,8 @@ fn start_screen(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
         let mut body = |ui: &mut egui::Ui| {
         ui.vertical_centered(|ui| {
             ui.horizontal(|ui| {
-                let title = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(38.0), t.text);
+                let title_size = if touch && card.width() < 320.0 { 30.0 } else if touch { 34.0 } else { 38.0 };
+                let title = ui.painter().layout_no_wrap(tl!("PhotoCraft").into(), crate::theme::semibold(title_size), t.text);
                 let by = ui.painter().layout_no_wrap(tl!("open source").into(), egui::FontId::proportional(13.0), t.text_faint);
                 let total = title.size().x + by.size().x + 10.0;
                 ui.add_space(((card.width() - total) / 2.0).max(0.0));
@@ -2733,9 +2734,11 @@ const HOME_RECENT_ROW: f32 = 30.0;
 /// and Clear Recent Files (#2691).
 fn home_recent(app: &mut PhotocraftApp, ui: &mut egui::Ui, recent: &[String]) {
     let t = crate::theme::Tokens::get(ui.ctx());
-    let width = 380.0;
+    // Recent rows used to stay 380 pt wide even when the touch card was narrower than that.
+    // Keep the desktop width cap, but fit the actual available mobile content width.
+    let width = ui.available_width().min(380.0).max(0.0);
     ui.horizontal(|ui| {
-        // Line the heading up with the file icons.
+        // Line the heading up with the file icons while keeping it inside narrow phone cards.
         ui.add_space(((ui.available_width() - width) / 2.0).max(0.0) + 8.0);
         ui.label(egui::RichText::new(tl!("Recent")).font(crate::theme::semibold(12.5)).color(t.text_dim));
     });
@@ -2757,7 +2760,7 @@ fn home_recent(app: &mut PhotocraftApp, ui: &mut egui::Ui, recent: &[String]) {
         let icon = Rect::from_center_size(egui::pos2(row.left() + 16.0, row.center().y), egui::vec2(16.0, 16.0));
         crate::icons::paint(ui, icon, "file", 14.0, t.text_dim);
         let x = row.left() + 32.0;
-        let name_g = crate::tab_strip::elided(ui, &name, egui::FontId::proportional(12.5), t.text, 170.0);
+        let name_g = crate::tab_strip::elided(ui, &name, egui::FontId::proportional(12.5), t.text, (width - 64.0).clamp(40.0, 170.0));
         let name_w = name_g.size().x;
         ui.painter().galley(egui::pos2(x, row.center().y - name_g.size().y / 2.0), name_g, t.text);
         let folder_max = (right - (x + name_w + 14.0)).max(0.0);

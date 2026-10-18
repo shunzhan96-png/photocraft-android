@@ -25,9 +25,9 @@ const BAR_H: f32 = 56.0;
 /// Side of a square button (points).
 const BTN: f32 = 48.0;
 /// Height of a list row in the sheet and the menu (points).
-const ROW_H: f32 = 52.0;
+const ROW_H: f32 = 48.0;
 /// From this width up the sheet is a side panel instead of a bottom sheet.
-const WIDE: f32 = 840.0;
+const WIDE: f32 = 760.0;
 
 fn flag_id() -> Id {
     Id::new("photocraft-touch-ui")
